@@ -4,6 +4,11 @@ using namespace std;
 char PacMan = 'O';
 char map1[31][32];
 
+char ghost1 = '^';
+char ghost2 = 'A';
+char ghost3 = '^';
+char ghost4 = '^';
+
 void CreateMap()
 {
     char map1Proto[31][32] = { 
@@ -50,11 +55,26 @@ void CreateMap()
 
     }
     map1[27][15] == PacMan;
+    map1[18][15] == ghost1;
+    map1[19][15] == ghost2;
+    map1[18][16] == ghost3;
+    map1[19][16] == ghost4;
+
     for(int i = 0;i < 31;i++)
     {
         for(int j = 0;j < 32;j++)
         {
-            cout << map1[i][j];
+            if(map1[i][j] == '#')
+            {
+                cout << "\033[34m" << map1[i][j];
+            }else if(map1[i][j] == '.')
+            {
+                cout << "\033[33m" << map1[i][j];
+            }
+            else{
+                cout << "\033[97m" << map1[i][j];
+            }
+
         }
         cout << endl;
     }
