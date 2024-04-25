@@ -1,0 +1,433 @@
+#include <iostream>
+#include <conio.h>
+#include <ctime>
+#include <cstdlib>
+using namespace std;
+
+const int POWER_UP_DURATION = 5;
+
+struct PowerPellet {
+    char symbol;
+    bool active;
+};
+
+char PacMan = 'O';
+int score = 0;
+int PacPositionX = 14;
+int PacPositionY = 23;
+char map1[31][32];
+bool pointEaten[31][32] = { false };
+bool powerUpActive = false;
+time_t timeLastPowerUp = 0;
+
+char ghost1 = '^';
+char ghost2 = '^';
+char ghost3 = '^';
+char ghost4 = '^';
+
+PowerPellet pw1 = {'o', true};
+PowerPellet pw2 = {'o', true};
+PowerPellet pw3 = {'o', true};
+PowerPellet pw4 = {'o', true};
+
+int GhostPositionX[4] = { 14, 13, 13, 14 };
+int GhostPositionY[4] = { 15, 14, 13, 13 };
+
+void InitializeGhosts() {
+    for (int i = 0; i < 4; ++i) {
+        GhostPositionX[i] = 14;
+        GhostPositionY[i] = 15 - i;
+    }
+}
+
+void CreateMap()
+{
+    char map1Proto[31][32] = {
+        "############################",
+        "#............##............#",
+        "#.####.#####.##.#####.####.#",
+        "# ####.#####.##.#####.#### #",
+        "#.####.#####.##.#####.####.#",
+        "#..........................#",
+        "#.####.##.########.##.####.#",
+        "#.####.##.########.##.####.#",
+        "#......##....##....##......#",
+        "######.#####.##.#####.######",
+        "     #.#####.##.#####.#     ",
+        "     #.##          ##.#     ",
+        "     #.## ###  ### ##.#     ",
+        "######.## #      # ##.######",
+        "      .   #      #   .      ",
+        "######.## #      # ##.######",
+        "     #.## ######## ##.#     ",
+        "     #.##          ##.#     ",
+        "     #.## ######## ##.#     ",
+        "######.## ######## ##.######",
+        "#............##............#",
+        "#.####.#####.##.#####.####.#",
+        "#.####.#####.##.#####.####.#",
+        "# ..##.......  .......##.. #",
+        "###.##.##.########.##.##.###",
+        "###.##.##.########.##.##.###",
+        "#......##....##....##......#",
+        "#.##########.##.##########.#",
+        "#.##########.##.##########.#",
+        "#..........................#",
+        "############################" };
+
+    for (int i = 0; i < 31; i++)
+    {
+        for (int j = 0; j < 32; j++)
+        {
+            map1[i][j] = map1Proto[i][j];
+        }
+    }
+
+    map1[PacPositionY][PacPositionX] = PacMan;
+    map1[3][26] = pw3.symbol;
+    map1[3][1] = pw2.symbol;
+    map1[23][1] = pw1.symbol;
+    map1[23][26] = pw4.symbol;
+
+    for (int i = 0; i < 4; ++i) {
+        map1[GhostPositionY[i]][GhostPositionX[i]] = (i == 0) ? ghost1 : ((i == 1) ? ghost2 : ((i == 2) ? ghost3 : ghost4));
+    }
+
+    for (int i = 0; i < 31; i++)
+    {
+        for (int j = 0; j < 32; j++)
+        {
+            if (map1[i][j] == '#')
+            {
+                cout << "\033[34m" << map1[i][j];
+            }
+            else if (map1[i][j] == '.' && !pointEaten[i][j])
+            {
+                cout << "\033[33m" << map1[i][j];
+            }
+            else if (map1[i][j] == 'o' && !pointEaten[i][j])
+            {
+                cout << "\033[97m" << "o";
+            }
+            else if (map1[i][j] == PacMan)
+            {
+                if (powerUpActive && PacPositionY == i && PacPositionX == j)
+                {
+                    cout << "\033[91m" << PacMan;
+                }
+                else
+                {
+                    if (powerUpActive && difftime(time(NULL), timeLastPowerUp) >= POWER_UP_DURATION)
+                    {
+                        cout << "\033[97m" << PacMan;
+                    }
+                    else
+                    {
+                        cout << "\033[97m" << PacMan;
+                    }
+                }
+            }
+            else if (map1[i][j] == ghost1)
+            {
+                cout << "\033[97m" << ghost1;
+            }
+            else if (map1[i][j] == ghost2)
+            {
+                cout << "\033[97m" << ghost2;
+            }
+            else if (map1[i][j] == ghost3)
+            {
+                cout << "\033[97m" << ghost3;
+            }
+            else if (map1[i][j] == ghost4)
+            {
+                cout << "\033[97m" << ghost4;
+            }
+            else
+            {
+                cout << " ";
+            }
+        }
+        cout << endl;
+    }
+    cout << "Score:" << score;
+}
+
+void MovePacMan(char direction)
+{
+    switch (direction)
+    {
+    case 'w':
+        if (map1[PacPositionY - 1][PacPositionX] != '#')
+        {
+            if (map1[PacPositionY - 1][PacPositionX] == '.' && !pointEaten[PacPositionY - 1][PacPositionX])
+            {
+                score++;
+                pointEaten[PacPositionY - 1][PacPositionX] = true;
+            }
+            else if (map1[PacPositionY - 1][PacPositionX] == pw1.symbol || map1[PacPositionY - 1][PacPositionX] == pw2.symbol || map1[PacPositionY - 1][PacPositionX] == pw3.symbol || map1[PacPositionY - 1][PacPositionX] == pw4.symbol)
+            {
+                score += 10;
+                powerUpActive = true;
+                timeLastPowerUp = time(NULL);
+
+                if (map1[PacPositionY - 1][PacPositionX] == pw1.symbol)
+                {
+                    pw1.active = false;
+                }
+                else if (map1[PacPositionY - 1][PacPositionX] == pw2.symbol)
+                {
+                    pw2.active = false;
+                }
+                else if (map1[PacPositionY - 1][PacPositionX] == pw3.symbol)
+                {
+                    pw3.active = false;
+                }
+                else if (map1[PacPositionY - 1][PacPositionX] == pw4.symbol)
+                {
+                    pw4.active = false;
+                }
+
+                map1[PacPositionY][PacPositionX] = ' ';
+                PacPositionY--;
+                map1[PacPositionY][PacPositionX] = PacMan;
+
+                return;
+            }
+
+            map1[PacPositionY][PacPositionX] = ' ';
+            PacPositionY--;
+            map1[PacPositionY][PacPositionX] = PacMan;
+        }
+        break;
+    case 's':
+        if (map1[PacPositionY + 1][PacPositionX] != '#')
+        {
+            if (map1[PacPositionY + 1][PacPositionX] == '.' && !pointEaten[PacPositionY + 1][PacPositionX])
+            {
+                score++;
+                pointEaten[PacPositionY + 1][PacPositionX] = true;
+            }
+            else if (map1[PacPositionY + 1][PacPositionX] == pw1.symbol || map1[PacPositionY + 1][PacPositionX] == pw2.symbol || map1[PacPositionY + 1][PacPositionX] == pw3.symbol || map1[PacPositionY + 1][PacPositionX] == pw4.symbol)
+            {
+                score += 10;
+                powerUpActive = true;
+                timeLastPowerUp = time(NULL);
+
+                if (map1[PacPositionY + 1][PacPositionX] == pw1.symbol)
+                {
+                    pw1.active = false;
+                }
+                else if (map1[PacPositionY + 1][PacPositionX] == pw2.symbol)
+                {
+                    pw2.active = false;
+                }
+                else if (map1[PacPositionY + 1][PacPositionX] == pw3.symbol)
+                {
+                    pw3.active = false;
+                }
+                else if (map1[PacPositionY + 1][PacPositionX] == pw4.symbol)
+                {
+                    pw4.active = false;
+                }
+
+                map1[PacPositionY][PacPositionX] = ' ';
+                PacPositionY++;
+                map1[PacPositionY][PacPositionX] = PacMan;
+
+                return;
+            }
+
+            map1[PacPositionY][PacPositionX] = ' ';
+            PacPositionY++;
+            map1[PacPositionY][PacPositionX] = PacMan;
+        }
+        break;
+    case 'a':
+        if (map1[PacPositionY][PacPositionX - 1] != '#')
+        {
+            if (map1[PacPositionY][PacPositionX - 1] == '.' && !pointEaten[PacPositionY][PacPositionX - 1])
+            {
+                score++;
+                pointEaten[PacPositionY][PacPositionX - 1] = true;
+            }
+            else if (map1[PacPositionY][PacPositionX - 1] == pw1.symbol || map1[PacPositionY][PacPositionX - 1] == pw2.symbol || map1[PacPositionY][PacPositionX - 1] == pw3.symbol || map1[PacPositionY][PacPositionX - 1] == pw4.symbol)
+            {
+                score += 10;
+                powerUpActive = true;
+                timeLastPowerUp = time(NULL);
+
+                if (map1[PacPositionY][PacPositionX - 1] == pw1.symbol)
+                {
+                    pw1.active = false;
+                }
+                else if (map1[PacPositionY][PacPositionX - 1] == pw2.symbol)
+                {
+                    pw2.active = false;
+                }
+                else if (map1[PacPositionY][PacPositionX - 1] == pw3.symbol)
+                {
+                    pw3.active = false;
+                }
+                else if (map1[PacPositionY][PacPositionX - 1] == pw4.symbol)
+                {
+                    pw4.active = false;
+                }
+
+                map1[PacPositionY][PacPositionX] = ' ';
+                PacPositionX--;
+                map1[PacPositionY][PacPositionX] = PacMan;
+
+                return;
+            }
+
+            map1[PacPositionY][PacPositionX] = ' ';
+            PacPositionX--;
+            map1[PacPositionY][PacPositionX] = PacMan;
+        }
+        break;
+    case 'd':
+        if (map1[PacPositionY][PacPositionX + 1] != '#')
+        {
+            if (map1[PacPositionY][PacPositionX + 1] == '.' && !pointEaten[PacPositionY][PacPositionX + 1])
+            {
+                score++;
+                pointEaten[PacPositionY][PacPositionX + 1] = true;
+            }
+            else if (map1[PacPositionY][PacPositionX + 1] == pw1.symbol || map1[PacPositionY][PacPositionX + 1] == pw2.symbol || map1[PacPositionY][PacPositionX + 1] == pw3.symbol || map1[PacPositionY][PacPositionX + 1] == pw4.symbol)
+            {
+                score += 10;
+                powerUpActive = true;
+                timeLastPowerUp = time(NULL);
+
+                if (map1[PacPositionY][PacPositionX + 1] == pw1.symbol)
+                {
+                    pw1.active = false;
+                }
+                else if (map1[PacPositionY][PacPositionX + 1] == pw2.symbol)
+                {
+                    pw2.active = false;
+                }
+                else if (map1[PacPositionY][PacPositionX + 1] == pw3.symbol)
+                {
+                    pw3.active = false;
+                }
+                else if (map1[PacPositionY][PacPositionX + 1] == pw4.symbol)
+                {
+                    pw4.active = false;
+                }
+
+                map1[PacPositionY][PacPositionX] = ' ';
+                PacPositionX++;
+                map1[PacPositionY][PacPositionX] = PacMan;
+
+                return;
+            }
+
+            map1[PacPositionY][PacPositionX] = ' ';
+            PacPositionX++;
+            map1[PacPositionY][PacPositionX] = PacMan;
+        }
+        break;
+    }
+}
+
+void MoveGhosts()
+{
+    time_t currentTime = time(NULL);
+    bool isPowerUpActive = powerUpActive && (currentTime - timeLastPowerUp) < POWER_UP_DURATION;
+
+    for (int i = 0; i < 4; ++i) {
+        if (isPowerUpActive && PacPositionX == GhostPositionX[i] && PacPositionY == GhostPositionY[i]) {
+            GhostPositionX[i] = 14;
+            GhostPositionY[i] = 15 - i;
+            continue;
+        }
+
+        int dx = 0, dy = 0;
+        if (GhostPositionX[i] < PacPositionX) dx = 1;
+        else if (GhostPositionX[i] > PacPositionX) dx = -1;
+        if (GhostPositionY[i] < PacPositionY) dy = 1;
+        else if (GhostPositionY[i] > PacPositionY) dy = -1;
+
+        if (map1[GhostPositionY[i] + dy][GhostPositionX[i] + dx] != '#' &&
+            map1[GhostPositionY[i] + dy][GhostPositionX[i] + dx] != ghost1 &&
+            map1[GhostPositionY[i] + dy][GhostPositionX[i] + dx] != ghost2 &&
+            map1[GhostPositionY[i] + dy][GhostPositionX[i] + dx] != ghost3 &&
+            map1[GhostPositionY[i] + dy][GhostPositionX[i] + dx] != ghost4) {
+            map1[GhostPositionY[i]][GhostPositionX[i]] = ' ';
+            GhostPositionX[i] += dx;
+            GhostPositionY[i] += dy;
+            map1[GhostPositionY[i]][GhostPositionX[i]] = (i == 0) ? ghost1 : ((i == 1) ? ghost2 : ((i == 2) ? ghost3 : ghost4));
+        }
+        else {
+            int randMove = rand() % 4;
+            switch (randMove) {
+            case 0:
+                if (map1[GhostPositionY[i] - 1][GhostPositionX[i]] != '#') {
+                    map1[GhostPositionY[i]][GhostPositionX[i]] = ' ';
+                    GhostPositionY[i]--;
+                    map1[GhostPositionY[i]][GhostPositionX[i]] = (i == 0) ? ghost1 : ((i == 1) ? ghost2 : ((i == 2) ? ghost3 : ghost4));
+                }
+                break;
+            case 1:
+                if (map1[GhostPositionY[i] + 1][GhostPositionX[i]] != '#') {
+                    map1[GhostPositionY[i]][GhostPositionX[i]] = ' ';
+                    GhostPositionY[i]++;
+                    map1[GhostPositionY[i]][GhostPositionX[i]] = (i == 0) ? ghost1 : ((i == 1) ? ghost2 : ((i == 2) ? ghost3 : ghost4));
+                }
+                break;
+            case 2:
+                if (map1[GhostPositionY[i]][GhostPositionX[i] - 1] != '#') {
+                    map1[GhostPositionY[i]][GhostPositionX[i]] = ' ';
+                    GhostPositionX[i]--;
+                    map1[GhostPositionY[i]][GhostPositionX[i]] = (i == 0) ? ghost1 : ((i == 1) ? ghost2 : ((i == 2) ? ghost3 : ghost4));
+                }
+                break;
+            case 3:
+                if (map1[GhostPositionY[i]][GhostPositionX[i] + 1] != '#') {
+                    map1[GhostPositionY[i]][GhostPositionX[i]] = ' ';
+                    GhostPositionX[i]++;
+                    map1[GhostPositionY[i]][GhostPositionX[i]] = (i == 0) ? ghost1 : ((i == 1) ? ghost2 : ((i == 2) ? ghost3 : ghost4));
+                }
+                break;
+            default:
+                break;
+            }
+        }
+
+        if (PacPositionX == GhostPositionX[i] && PacPositionY == GhostPositionY[i]) {
+            cout << "\nGame Over! You got caught by a ghost." << endl;
+            exit(0);
+        }
+    }
+}
+
+int main()
+{
+    srand(time(NULL));
+    InitializeGhosts();
+
+    CreateMap();
+    char direction;
+
+    while (true)
+    {
+        direction = _getch();
+
+        MovePacMan(direction);
+        MoveGhosts();
+
+        system("cls");
+
+        CreateMap();
+
+        if (powerUpActive && difftime(time(NULL), timeLastPowerUp) >= POWER_UP_DURATION)
+        {
+            powerUpActive = false;
+            CreateMap();
+        }
+    }
+
+    return 0;
+}
